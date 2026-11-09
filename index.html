@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terminal_Acceso</title>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <script type="text/javascript">
+        (function() {
+            emailjs.init("756k45O-YDKFEcWp7");
+        })();
+    </script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body { 
+            background-color: #000; 
+            color: #0f0; 
+            font-family: 'Courier New', Courier, monospace; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            overflow: hidden;
+        }
+
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 0;
+        }
+
+        .terminal-container { 
+            position: relative;
+            z-index: 1;
+            background: rgba(0, 10, 0, 0.85); 
+            padding: 30px; 
+            border: 1px solid #0f0;
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.3), inset 0 0 15px rgba(0, 255, 0, 0.2); 
+            width: 100%;
+            max-width: 500px;
+            backdrop-filter: blur(3px);
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        #loader-terminal {
+            display: block;
+        }
+
+        #terminal {
+            display: none;
+        }
+
+        .loader-logs {
+            font-size: 0.85rem;
+            line-height: 1.6;
+            min-height: 140px;
+            margin-bottom: 20px;
+            color: #00ff00;
+        }
+
+        .progress-bar-container {
+            width: 100%;
+            border: 1px solid #0f0;
+            height: 20px;
+            padding: 2px;
+            margin-top: 15px;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background-color: #0f0;
+            width: 0%;
+            box-shadow: 0 0 10px #0f0;
+        }
+
+        .terminal-header {
+            border-bottom: 1px solid #0f0;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+        }
+
+        h2 { 
+            font-size: 1.8rem; 
+            margin-bottom: 10px;
+            text-shadow: 0 0 5px #0f0;
+            letter-spacing: 2px;
+        }
+
+        p.subtitle { 
+            font-size: 0.9rem; 
+            margin-bottom: 25px; 
+            opacity: 0.8;
+        }
+
+        .input-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        .prompt {
+            color: #0f0;
+            margin-right: 10px;
+            font-weight: bold;
+        }
+
+        input[type="email"] { 
+            flex: 1;
+            background: transparent;
+            border: none;
+            border-bottom: 1px solid #0f0;
+            color: #0f0;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 1rem;
+            padding: 5px;
+            outline: none;
+        }
+
+        input[type="email"]:focus { 
+            box-shadow: 0 2px 5px rgba(0, 255, 0, 0.5); 
+        }
+
+        #binary-output {
+            font-size: 0.75rem;
+            color: #00ff00;
+            word-break: break-all;
+            min-height: 40px;
+            margin-bottom: 15px;
+            font-family: monospace;
+            text-shadow: 0 0 4px #00ff00;
+        }
+
+        .bit-pulse {
+            display: inline-block;
+            animation: binaryPulse 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        @keyframes binaryPulse {
+            0% {
+                opacity: 0;
+                transform: scale(1.4);
+                color: #ffffff;
+                text-shadow: 0 0 10px #ffffff;
+            }
+            50% {
+                opacity: 1;
+                transform: scale(0.9);
+                color: #00ff00;
+            }
+            100% {
+                opacity: 0.85;
+                transform: scale(1);
+            }
+        }
+
+        button { 
+            width: 100%; 
+            background: #002200; 
+            color: #0f0; 
+            border: 1px solid #0f0; 
+            padding: 12px; 
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer; 
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            transition: all 0.2s;
+        }
+
+        button:hover { 
+            background: #0f0; 
+            color: #000;
+            box-shadow: 0 0 15px #0f0;
+        }
+
+        .blink {
+            animation: blinker 1s linear infinite;
+        }
+        @keyframes blinker {
+            50% { opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="matrix"></canvas>
+
+    <!-- 1. TERMINAL DE CARGA INICIAL (BOOT SEQUENCE) -->
+    <div class="terminal-container" id="loader-terminal">
+        <div class="terminal-header">
+            <span>SYSTEM BOOT v4.0.26</span>
+            <span>INITIALIZING...</span>
+        </div>
+        <h2>> SECUENCIA_DE_INICIO<span class="blink">_</span></h2>
+        
+        <div class="loader-logs" id="logs"></div>
+
+        <div class="progress-bar-container">
+            <div class="progress-bar-fill" id="progress" style="transition: width 0.1s linear;"></div>
+        </div>
+    </div>
+
+    <!-- 2. TERMINAL PRINCIPAL DEL FORMULARIO Y RESULTADOS -->
+    <div class="terminal-container" id="terminal">
+        <div class="terminal-header">
+            <span>STATUS: CONNECTED</span>
+            <span>SECURITY: ENCRYPTING...</span>
+        </div>
+        
+        <h2>> INICIAR_SISTEMA<span class="blink">_</span></h2>
+        <p class="subtitle">Evasión de algoritmos lista. Ingrese credenciales para interceptar la red.</p>
+        
+        <form id="subscribe-form">
+            <div class="input-group">
+                <span class="prompt">root@cyberhack:~#</span>
+                <input type="email" name="email" id="email" placeholder="usuario@nodo.local" required autocomplete="off">
+            </div>
+            <div id="binary-output"></div>
+            
+            <button type="submit" id="submit-btn">[ EJECUTAR_INYECCIÓN ]</button>
+        </form>
+    </div>
+
+    <script>
+        // --- 1. EFECTO MATRIX (LLUVIA DE CEROS Y UNOS) ---
+        const canvas = document.getElementById('matrix');
+        const ctx = canvas.getContext('2d');
+
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const characters = '01';
+        const fontSize = 14;
+        const columns = canvas.width / fontSize;
+        const drops = [];
+
+        for(let x = 0; x < columns; x++) {
+            drops[x] = 1;
+        }
+
+        function drawMatrix() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.fillStyle = '#0F0'; 
+            ctx.font = fontSize + 'px monospace';
+
+            for(let i = 0; i < drops.length; i++) {
+                const text = characters.charAt(Math.floor(Math.random() * characters.length));
+                ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+                
+                if(drops[i] * fontSize > canvas.height && Math.random() > 0.975)
+                    drops[i] = 0;
+                
+                drops[i]++;
+            }
+        }
+        setInterval(drawMatrix, 33);
+
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+
+        // --- 2. SECUENCIA DE ARRANQUE INICIAL ---
+        const bootSteps = [
+            "> [OK] Inicializando memoria del kernel...",
+            "> [OK] Evadiendo proxies y cortafuegos...",
+            "> [OK] Conectando con los nodos de EmailJS...",
+            "> [OK] Estableciendo túnel de encriptación binaria...",
+            "> [OK] Sistema listo. Accediendo al nodo principal..."
+        ];
+
+        const logsDiv = document.getElementById('logs');
+        const progressBar = document.getElementById('progress');
+        let stepIndex = 0;
+
+        function runBootSequence() {
+            if (stepIndex < bootSteps.length) {
+                const line = document.createElement('div');
+                line.innerText = bootSteps[stepIndex];
+                logsDiv.appendChild(line);
+                
+                stepIndex++;
+                const progressPercent = (stepIndex / bootSteps.length) * 100;
+                progressBar.style.width = progressPercent + '%';
+
+                setTimeout(runBootSequence, 400);
+            } else {
+                setTimeout(() => {
+                    document.getElementById('loader-terminal').style.display = 'none';
+                    document.getElementById('terminal').style.display = 'block';
+                }, 400);
+            }
+        }
+
+        window.addEventListener('load', runBootSequence);
+
+        // --- 3. ENCRIPTACIÓN BINARIA EN TIEMPO REAL ---
+        document.getElementById('email').addEventListener('input', function(e) {
+            const binaryDiv = document.getElementById('binary-output');
+            const text = this.value;
+            
+            if (text.length === 0) {
+                binaryDiv.innerHTML = '';
+                return;
+            }
+
+            let htmlContent = '> ENCRIPTANDO: ';
+            for (let i = 0; i < text.length; i++) {
+                const binaryChar = text[i].charCodeAt(0).toString(2).padStart(8, '0');
+                htmlContent += `<span class="bit-pulse">${binaryChar}</span> `;
+            }
+            
+            binaryDiv.innerHTML = htmlContent;
+        });
+
+        // --- 4. ENVÍO DE EMAILJS CON ANIMACIÓN PROGRESIVA DE 0% A 100% ---
+        document.getElementById('subscribe-form').addEventListener('submit', function(event) {
+            event.preventDefault(); 
+            
+            const terminal = document.getElementById('terminal');
+            const form = this;
+            const serviceID = 'service_1syep7d';
+            const templateID = 'template_84qtoj1';
+
+            // Iniciar envío en segundo plano
+            const emailPromise = emailjs.sendForm(serviceID, templateID, form);
+
+            // Reemplazar interfaz por la pantalla de progreso de encriptación
+            terminal.innerHTML = `
+                <div class="terminal-header">
+                    <span>STATUS: ENCRYPTING...</span>
+                    <span>SECURITY: HIGH</span>
+                </div>
+                <h2 style="color: #0f0;">> TRANSMITIENDO_DATOS<span class="blink">_</span></h2>
+                <p class="subtitle">Ofuscando paquetes y enviando por túnel cifrado...</p>
+                
+                <div style="margin: 25px 0;">
+                    <div style="display:flex; justify-shadow:space-between; justify-content: space-between; margin-bottom: 8px; font-weight:bold;">
+                        <span>ENCRIPTACIÓN:</span>
+                        <span id="send-percent">0%</span>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar-fill" id="send-bar" style="transition: width 0.05s linear;"></div>
+                    </div>
+                </div>
+                
+                <p id="send-status" style="font-size: 0.85rem; color: #00cc00;">> Generando llaves RSA-4096...</p>
+            `;
+
+            let progress = 0;
+            const sendBar = document.getElementById('send-bar');
+            const sendPercent = document.getElementById('send-percent');
+            const sendStatus = document.getElementById('send-status');
+
+            const statusMessages = [
+                "> Generando llaves de cifrado RSA-4096...",
+                "> Ofuscando dirección de correo a paquetes binarios...",
+                "> Abriendo socket seguro con servidores EmailJS...",
+                "> Transmitiendo carga útil encriptada...",
+                "> Confirmando handshake de recepción..."
+            ];
+
+            // Animación continua de 0% a 100%
+            const interval = setInterval(() => {
+                progress += Math.floor(Math.random() * 6) + 3; // Incremento aleatorio y fluido
+                if (progress > 100) progress = 100;
+
+                sendBar.style.width = progress + '%';
+                sendPercent.innerText = progress + '%';
+
+                const msgIdx = Math.min(Math.floor((progress / 100) * statusMessages.length), statusMessages.length - 1);
+                sendStatus.innerText = statusMessages[msgIdx];
+
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    
+                    // Al llegar a 100%, esperar a que EmailJS confirme y mostrar el resultado final
+                    emailPromise.then(function() {
+                        setTimeout(() => {
+                            terminal.innerHTML = `
+                                <div class="terminal-header">
+                                    <span>STATUS: SUCCESS</span>
+                                    <span>SECURITY: MAX</span>
+                                </div>
+                                <h2 style="color: #0f0;">> ENCRIPTACIÓN_COMPLETADA</h2>
+                                <p class="subtitle">Datos ofuscados y transmitidos exitosamente. Revisa tu terminal de correo para abrir los paquetes.</p>
+                                <p style="margin-top: 20px;">> <span class="blink">_</span></p>
+                            `;
+                        }, 300);
+                    }, function(error) {
+                        alert('ERROR_CRÍTICO: ' + JSON.stringify(error));
+                        location.reload();
+                    });
+                }
+            }, 60);
+        });
+    </script>
+
+</body>
+</html>
